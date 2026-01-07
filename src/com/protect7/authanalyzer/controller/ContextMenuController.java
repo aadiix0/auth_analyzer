@@ -107,11 +107,6 @@ public class ContextMenuController implements IContextMenuFactory {
 			GenericHelper.repeatRequests(invocation.getSelectedMessages(), configurationPanel, null);
 		});
 		authAnalyzerMenu.add(repeatRequests);
-		JMenuItem repeatRequestsAllRoles = new JMenuItem("Repeat request for all roles (assign hotkey)");
-		repeatRequestsAllRoles.addActionListener(e -> {
-			GenericHelper.repeatRequests(invocation.getSelectedMessages(), configurationPanel, null);
-		});
-		authAnalyzerMenu.add(repeatRequestsAllRoles);
 		JMenu repeatRequestAsMenu = new JMenu("Repeat request as...");
 		for (String sessionName : configurationPanel.getSessionNames()) {
 			JMenuItem sessionItem = new JMenuItem(sessionName);

@@ -17,17 +17,19 @@ public class HttpListener implements IHttpListener, IProxyListener {
 
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-		if (config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {
-			if (config.isHardPause()) {
-				if (toolFlag != IBurpExtenderCallbacks.TOOL_PROXY) {
-					if (!isFiltered(toolFlag, messageInfo)) {
-						config.performAuthAnalyzerRequest(messageInfo, null);
-					}
-				}
-			} else {
-				if (!isFiltered(toolFlag, messageInfo)) {
-					config.performAuthAnalyzerRequest(messageInfo, null);
-				}
+		if (!config.isRunning()) {
+			return;
+		}
+
+		// Hard Pause Logic: if enabled, ignore all traffic from the proxy tool
+		if (config.isHardPause() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY) {
+			return;
+		}
+
+		// Original Logic for when to run analysis (on responses, or on requests if they are being dropped)
+		if (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY)) {
+			if (!isFiltered(toolFlag, messageInfo)) {
+				config.performAuthAnalyzerRequest(messageInfo, null);
 			}
 		}
 	}
