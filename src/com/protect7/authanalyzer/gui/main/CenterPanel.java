@@ -421,7 +421,7 @@ public class CenterPanel extends JPanel {
 							for (int i=0; i<requestResponseList.size(); i++) {
 								messages[i] = requestResponseList.get(i).getRequestResponse();
 							}
-							GenericHelper.repeatRequests(messages, mainPanel.getConfigurationPanel());
+							GenericHelper.repeatRequests(messages, mainPanel.getConfigurationPanel(), null);
 						});
 						JMenuItem deleteRowItem = new JMenuItem("Delete Row" + appendix);
 						deleteRowItem.addActionListener(e -> {

@@ -19,8 +19,8 @@ import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class GenericHelper {
-	
-	public static void repeatRequests(IHttpRequestResponse[] messages, ConfigurationPanel configurationPanel) {
+
+	public static void repeatRequests(IHttpRequestResponse[] messages, ConfigurationPanel configurationPanel, String sessionName) {
 		if(configurationPanel.isPaused()) {
 			configurationPanel.pauseButtonPressed();
 		}
@@ -46,18 +46,18 @@ public class GenericHelper {
 					}
 				}
 				if(!isFiltered) {
-					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
+					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message, sessionName);
 				}
 			}
 		}
 	}
-	
+
 	public static void uiUpdateAnimation(Component component, Color animationColor) {
 		Color foregroundColor = component.getForeground();
 		if(component != null && foregroundColor != null && foregroundColor.getRGB() != animationColor.getRGB()) {
 			component.setForeground(animationColor);
 			Timer timer = new Timer(5000, new ActionListener() {
-				
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					component.setForeground(foregroundColor);
@@ -67,7 +67,7 @@ public class GenericHelper {
 			timer.start();
 		}
 	}
-	
+
 	public static void animateBurpExtensionTab() {
 		if(BurpExtender.mainPanel.getParent() != null && BurpExtender.mainPanel.getParent() instanceof JTabbedPane) {
 			JTabbedPane burpTabbedPane = (JTabbedPane) BurpExtender.mainPanel.getParent();
@@ -89,11 +89,11 @@ public class GenericHelper {
 			}
 		}
 	}
-	
+
 	public static Color getErrorBgColor() {
 		return new Color(255, 102, 102);
 	}
-	
+
 	public static String getArrayAsString(String[] array) {
 		String arrayAsString = "";
 		if (array != null) {
@@ -107,7 +107,7 @@ public class GenericHelper {
 		}
 		return arrayAsString;
 	}
-	
+
 	public static JFrame getBurpFrame() {
         for (Frame f : Frame.getFrames()) {
             if (f.isVisible() && f.getTitle().startsWith(("Burp Suite"))) {

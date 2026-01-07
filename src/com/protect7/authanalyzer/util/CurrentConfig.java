@@ -17,30 +17,31 @@ public class CurrentConfig {
 	private static CurrentConfig mInstance = new CurrentConfig();
 	//private final String[] patternsStatic = {"token", "code", "user", "mail", "pass", "key", "csrf", "xsrf"};
 	//private final String[] patternsDynamic = {"viewstate", "eventvalidation"};
-	private final int POOL_SIZE_MIN = 1; 
+	private final int POOL_SIZE_MIN = 1;
 	private final RequestController requestController = new RequestController();
 	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
 	private ArrayList<RequestFilter> requestFilterList = new ArrayList<>();
 	private ArrayList<Session> sessions = new ArrayList<>();
 	private RequestTableModel tableModel = null;
 	private boolean running = false;
+	private boolean hardPause = false;
 	private boolean dropOriginal = false;
 	private volatile int mapId = 0;
 	private boolean respectResponseCodeForSameStatus = true;
-	private boolean respectResponseCodeForSimilarStatus = true; 
+	private boolean respectResponseCodeForSimilarStatus = true;
 	private int deviationForSimilarStatus = 5;
 	private long delayBetweenRequestsInMilliseconds = 0;
 
 	private CurrentConfig() {
 	}
-	
-	public void performAuthAnalyzerRequest(IHttpRequestResponse messageInfo) {
-		analyzerThreadExecutor.execute(new Runnable() {				
+
+	public void performAuthAnalyzerRequest(IHttpRequestResponse messageInfo, String sessionName) {
+		analyzerThreadExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
 				BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
 						analyzerThreadExecutor.getQueue().size());
-				getRequestController().analyze(messageInfo);
+				getRequestController().analyze(messageInfo, sessionName);
 				try {
 					Thread.sleep(delayBetweenRequestsInMilliseconds);
 				} catch (InterruptedException e) {
@@ -51,17 +52,25 @@ public class CurrentConfig {
 		BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
 				analyzerThreadExecutor.getQueue().size());
 	}
-	
+
 	public static CurrentConfig getCurrentConfig(){
 		  return mInstance;
 	}
-	
+
 	public void addRequestFilter(RequestFilter requestFilter) {
 		getRequestFilterList().add(requestFilter);
 	}
 
 	public boolean isRunning() {
 		return running;
+	}
+
+	public boolean isHardPause() {
+		return hardPause;
+	}
+
+	public void setHardPause(boolean hardPause) {
+		this.hardPause = hardPause;
 	}
 
 	public void setRunning(boolean running) {
@@ -100,7 +109,7 @@ public class CurrentConfig {
 	public ArrayList<RequestFilter> getRequestFilterList() {
 		return requestFilterList;
 	}
-	
+
 	public RequestFilter getRequestFilterAt(int index) {
 		return requestFilterList.get(index);
 	}
@@ -116,20 +125,20 @@ public class CurrentConfig {
 	public void clearSessionList() {
 		sessions.clear();
 	}
-	
+
 	public int getNextMapId() {
 		mapId++;
 		return mapId;
 	}
-	
+
 	public void setDropOriginal(boolean dropOriginal) {
 		this.dropOriginal = dropOriginal;
 	}
-	
+
 	public boolean isDropOriginal() {
 		return dropOriginal;
 	}
-	
+
 	//Returns session with corresponding name. Returns null if session not exists
 	public Session getSessionByName(String name) {
 		for(Session session : sessions) {
@@ -139,7 +148,7 @@ public class CurrentConfig {
 		}
 		return null;
 	}
-	
+
 	public RequestTableModel getTableModel() {
 		return tableModel;
 	}
@@ -147,7 +156,7 @@ public class CurrentConfig {
 	public void setTableModel(RequestTableModel tableModel) {
 		this.tableModel = tableModel;
 	}
-	
+
 	public void clearSessionRequestMaps() {
 		for(Session session : getSessions()) {
 			session.clearRequestResponseMap();
@@ -184,5 +193,5 @@ public class CurrentConfig {
 
 	public void setDerivationForSimilarStatus(int derivationForSimilarStatus) {
 		this.deviationForSimilarStatus = derivationForSimilarStatus;
-	}	
+	}
 }

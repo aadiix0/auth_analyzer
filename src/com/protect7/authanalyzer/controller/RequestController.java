@@ -4,7 +4,7 @@ package com.protect7.authanalyzer.controller;
  * The RequestController processes each HTTP message which is not previously rejected due to filter specification. The RequestController
  * extracts the defined values (CSRF Token and Grep Rules) and modifies the given HTTP Message for each session. Furthermore, the
  * RequestController is responsible for analyzing the response and declare the BYPASS status according to the specified definitions.
- * 
+ *
  * @author Simon Reinhart
  */
 
@@ -28,8 +28,8 @@ import burp.IResponseInfo;
 
 public class RequestController {
 
-	public void analyze(IHttpRequestResponse originalRequestResponse) {
-		
+	public void analyze(IHttpRequestResponse originalRequestResponse, String sessionName) {
+
 		// Fail-Safe - Check if messageInfo can be processed
 		if (originalRequestResponse == null || originalRequestResponse.getRequest() == null) {
 			BurpExtender.callbacks.printError("Cannot analyze request with null values.");
@@ -42,6 +42,9 @@ public class RequestController {
 				.analyzeResponse(originalRequestResponse.getResponse());
 			}
 			for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
+				if(sessionName != null && !session.getName().equals(sessionName)) {
+					continue;
+				}
 				boolean isFiltered = false;
 				if(!session.getStatusPanel().isRunning()) {
 					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
@@ -57,16 +60,16 @@ public class RequestController {
 					session.putRequestResponse(mapId, analyzerRequestResponse);
 					session.getStatusPanel().incrementAmountOfFitleredRequests();
 					isFiltered = true;
-				} 
+				}
 				else if(session.isRestrictToScope() && !scopeMatches(originalRequestInfo.getUrl(), session)) {
 					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
 							null, BypassConstants.NA, "Filtered due to scope restriction.", -1, -1);
 					session.putRequestResponse(mapId, analyzerRequestResponse);
 					session.getStatusPanel().incrementAmountOfFitleredRequests();
 					isFiltered = true;
-				} 
+				}
 				if(!isFiltered) {
-				
+
 					// Handle Session
 					TokenPriority tokenPriority = new TokenPriority();
 					byte[] modifiedRequest = RequestModifHelper.getModifiedRequest(originalRequestResponse.getRequest(), session, tokenPriority);
@@ -81,7 +84,7 @@ public class RequestController {
 					// Perform modified request
 					IHttpRequestResponse sessionRequestResponse = BurpExtender.callbacks
 							.makeHttpRequest(originalRequestResponse.getHttpService(), message);
-				
+
 					// Analyze Response of modified Request
 					if (sessionRequestResponse.getRequest() != null && sessionRequestResponse.getResponse() != null) {
 						IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
@@ -143,13 +146,13 @@ public class RequestController {
 				originalStatusCode = originalResponseInfo.getStatusCode();
 				originalResponseContentLength = originalRequestResponse.getResponse().length - originalResponseInfo.getBodyOffset();
 			}
-			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, 
+			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse,
 					originalRequestInfo.getMethod(), url, infoText, originalStatusCode, originalResponseContentLength);
-			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);		
+			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);
 			GenericHelper.animateBurpExtensionTab();
 		}
 	}
-	
+
 	private boolean scopeMatches(URL url, Session session) {
 		URL scopeUrl = session.getScopeUrl();
 		if(scopeUrl != null) {
@@ -174,7 +177,7 @@ public class RequestController {
 
 	/*
 	 * Bypass if: - Both Responses have same Response Body and Status Code
-	 * 
+	 *
 	 * Potential Bypass if: - Both Responses have same Response Code - Both
 	 * Responses have +-5% of response body length
 	 *

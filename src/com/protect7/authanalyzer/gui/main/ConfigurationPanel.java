@@ -17,6 +17,7 @@ import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -70,6 +71,7 @@ public class ConfigurationPanel extends JPanel {
 	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
 	private final JButton startStopButton = new JButton();
 	private final JButton pauseButton = new JButton();
+	private final JCheckBox hardPauseCheckBox = new JCheckBox("Hard Pause");
 	//private final JLabel pendingRequestsLabel = new JLabel("Pending Requests Queue: 0");
 	private final JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
@@ -81,7 +83,7 @@ public class ConfigurationPanel extends JPanel {
 	private final MainPanel mainPanel;
 
 	public ConfigurationPanel(MainPanel mainPanel) {
-		this.mainPanel = mainPanel;	
+		this.mainPanel = mainPanel;
 		sessionTabbedPane.addNewSessionListener(new NewSessionListener() {
 			@Override
 			public void newSession() {
@@ -91,9 +93,9 @@ public class ConfigurationPanel extends JPanel {
 				}
 			}
 		});
-		
+
 		sessionTabbedPane.addCloneSessionListener(new CloneSessionListener() {
-			
+
 			@Override
 			public void cloneSession() {
 				String newSessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of New Session");
@@ -104,7 +106,7 @@ public class ConfigurationPanel extends JPanel {
 				}
 			}
 		});
-		
+
 		sessionTabbedPane.addRenameSessionListener(new RenameSessionListener() {
 			@Override
 			public void renameSession(String currentName) {
@@ -120,8 +122,8 @@ public class ConfigurationPanel extends JPanel {
 				}
 			}
 		});
-		
-		sessionTabbedPane.addDeleteSessionListener(new DeleteSessionListener() {		
+
+		sessionTabbedPane.addDeleteSessionListener(new DeleteSessionListener() {
 			@Override
 			public void deleteSession(String title) {
 				if (doModify()) {
@@ -203,9 +205,12 @@ public class ConfigurationPanel extends JPanel {
 		pauseButton.setEnabled(false);
 		pauseButton.addActionListener(e -> pauseButtonPressed());
 
+		hardPauseCheckBox.addActionListener(e -> hardPauseCheckBoxPressed());
+		hardPauseCheckBox.setEnabled(false);
+
 		dropOriginalButton.addActionListener(e -> dropOriginalButtonPressed());
 		dropOriginalButton.setEnabled(false);
-		
+
 		JButton settingsButton = new JButton("Settings");
 		settingsButton.addActionListener(e -> new SettingsDialog(this));
 
@@ -221,6 +226,8 @@ public class ConfigurationPanel extends JPanel {
 		startStopButtonPanel.add(startStopButton, c1);
 		c1.gridx = 1;
 		startStopButtonPanel.add(pauseButton, c1);
+		c1.gridx = 2;
+		startStopButtonPanel.add(hardPauseCheckBox, c1);
 		c1.gridy = 2;
 		c1.gridx = 0;
 		c1.gridwidth = 2;
@@ -229,7 +236,7 @@ public class ConfigurationPanel extends JPanel {
 		startStopButtonPanel.add(new JLabel(" "), c1);
 		c1.gridy = 4;
 		startStopButtonPanel.add(settingsButton, c1);
-		
+
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;
 		c.gridy = 0;
@@ -245,7 +252,7 @@ public class ConfigurationPanel extends JPanel {
 		c.gridx = 2;
 		filterPanel.setBorder(new CompoundBorder(BorderFactory.createTitledBorder("Filters"), new EmptyBorder(3, 3, 3, 3)));
 		add(filterPanel, c);
-		
+
 	}
 
 	public void loadAutoStoredData() {
@@ -263,7 +270,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 		sessionTabbedPane.setSelectedIndex(0);
 	}
-	
+
 	public void saveSetup() {
 		JFileChooser chooser = new JFileChooser();
 		chooser.setSelectedFile(new File("Auth_Analyzer_Setup.json"));
@@ -447,7 +454,7 @@ public class ConfigurationPanel extends JPanel {
 			sessionTabbedPane.setSelectedIndex(index);
 		}
 	}
-	
+
 	private int getTabbedPaneIndexForTitle(String title) {
 		for (int i = 0; i < sessionTabbedPane.getTabCount()-1; i++) {
 			if (sessionTabbedPane.getTitleAt(i).equals(title)) {
@@ -493,6 +500,9 @@ public class ConfigurationPanel extends JPanel {
 				sessionTabbedPane.setModifEnabled(true);
 				pauseButton.setText(PAUSE_TEXT);
 				pauseButton.setEnabled(false);
+				hardPauseCheckBox.setEnabled(false);
+				hardPauseCheckBox.setSelected(false);
+				config.setHardPause(false);
 				dropOriginalButton.setEnabled(false);
 				setDropOriginalRequest(false);
 				config.setRunning(false);
@@ -516,7 +526,7 @@ public class ConfigurationPanel extends JPanel {
 					} catch (Exception e) {
 						BurpExtender.callbacks.printOutput("Can not store setup. Error Message: " + e.getMessage());
 					}
-					
+
 					for (RequestFilter filter : config.getRequestFilterList()) {
 						filter.resetFilteredAmount();
 					}
@@ -526,6 +536,7 @@ public class ConfigurationPanel extends JPanel {
 					}
 					sessionTabbedPane.setModifEnabled(false);
 					pauseButton.setEnabled(true);
+					hardPauseCheckBox.setEnabled(true);
 					dropOriginalButton.setEnabled(true);
 					config.setRunning(true);
 					startStopButton.setText(ANALYZER_STARTED_TEXT);
@@ -535,7 +546,7 @@ public class ConfigurationPanel extends JPanel {
 			mainPanel.updateDividerLocation();
 		}
 	}
-	
+
 	public void createSessionObjects(boolean setRunning) {
 		if(sessionPanelMap.size() != config.getSessions().size()) {
 			sessionListChanged = true;
@@ -644,7 +655,7 @@ public class ConfigurationPanel extends JPanel {
 				for (JsonElement matchAndReplaceElement : matchAndReplaceArray) {
 					JsonObject matchAndReplaceObject = matchAndReplaceElement.getAsJsonObject();
 					if(matchAndReplaceObject.get("match") != null && matchAndReplaceObject.get("replace") != null) {
-						matchAndReplaceList.add(new MatchAndReplace(matchAndReplaceObject.get("match").getAsString(), 
+						matchAndReplaceList.add(new MatchAndReplace(matchAndReplaceObject.get("match").getAsString(),
 								matchAndReplaceObject.get("replace").getAsString()));
 					}
 				}
@@ -696,7 +707,7 @@ public class ConfigurationPanel extends JPanel {
 			sessionPanelMap.put(sessionPanel.getSessionName(), sessionPanel);
 			sessionTabbedPane.setModifEnabled(true);
 		}
-	
+
 		// Load Filters
 		JsonArray storedFiltersArray = JsonParser.parseString(jsonString).getAsJsonObject().get("filters")
 				.getAsJsonArray();
@@ -728,9 +739,17 @@ public class ConfigurationPanel extends JPanel {
 			pauseButton.setToolTipText("Currently Running");
 		}
 	}
-	
+
 	public boolean isPaused() {
 		return pauseButton.getText().equals(PLAY_TEXT);
+	}
+
+	private void hardPauseCheckBoxPressed() {
+		if (hardPauseCheckBox.isSelected()) {
+			config.setHardPause(true);
+		} else {
+			config.setHardPause(false);
+		}
 	}
 
 	private String[] getInputArray(Component parentFrame, String message, String value) {
