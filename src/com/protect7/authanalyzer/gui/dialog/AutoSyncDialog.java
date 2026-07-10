@@ -19,8 +19,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 import com.protect7.authanalyzer.entities.AutoSyncConfig;
+import com.protect7.authanalyzer.entities.Session;
+import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
+import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
+import com.protect7.authanalyzer.util.CurrentConfig;
 
 public class AutoSyncDialog extends JDialog {
 
@@ -30,6 +34,7 @@ public class AutoSyncDialog extends JDialog {
 	private final GridBagConstraints c = new GridBagConstraints();
 	private final ArrayList<AutoSyncConfig> autoSyncList;
 	private final String INFO_TEXT;
+	private final SessionPanel sessionPanel;
 	
 	private final PlaceholderTextField triggerNameInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final PlaceholderTextField triggerValueInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
@@ -41,6 +46,7 @@ public class AutoSyncDialog extends JDialog {
 	private final JButton okButton = new JButton("OK");
 	
 	public AutoSyncDialog(SessionPanel sessionPanel) {
+		this.sessionPanel = sessionPanel;
 		autoSyncList = sessionPanel.getAutoSyncList();
 		INFO_TEXT = "Specify Live Proxy Sync rules for the session \""+sessionPanel.getSessionName()+"\"";
 		
@@ -82,13 +88,33 @@ public class AutoSyncDialog extends JDialog {
 		});
 	}
 
+	private String getCurrentValue(String targetTokenName) {
+		Session session = CurrentConfig.getCurrentConfig().getSessionByName(sessionPanel.getSessionName());
+		if (session != null) {
+			Token token = session.getTokenByName(targetTokenName);
+			if (token != null) {
+				String val = token.getValue();
+				return val != null ? val : "";
+			}
+		} else {
+			// Fallback to UI TokenPanel
+			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
+				if (tokenPanel.getTokenName().equals(targetTokenName)) {
+					String val = tokenPanel.getStaticTokenValue();
+					return val != null ? val : "";
+				}
+			}
+		}
+		return "";
+	}
+
 	private void updateAutoSyncList() {
 		listPanel.removeAll();
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.insets = new Insets(0, 5, 20, 0);
 		c.gridx = 0;
 		c.gridy = 0;
-		c.gridwidth = 6;
+		c.gridwidth = 8;
 		listPanel.add(new JLabel(INFO_TEXT), c);
 		
 		c.insets = new Insets(0, 5, 5, 0);
@@ -103,6 +129,8 @@ public class AutoSyncDialog extends JDialog {
 		listPanel.add(new JLabel("Regex (Optional):"), c);
 		c.gridx = 4;
 		listPanel.add(new JLabel("Target Token:"), c);
+		c.gridx = 5;
+		listPanel.add(new JLabel("Current Value:"), c);
 		
 		c.gridx = 0;
 		c.gridy++;
@@ -116,6 +144,8 @@ public class AutoSyncDialog extends JDialog {
 		c.gridx = 4;
 		listPanel.add(targetTokenInput, c);
 		c.gridx = 5;
+		listPanel.add(getFormattedLabel(""), c);
+		c.gridx = 6;
 		listPanel.add(addEntryButton, c);
 
 		c.gridy++;
@@ -131,6 +161,28 @@ public class AutoSyncDialog extends JDialog {
 			c.gridx = 4;
 			listPanel.add(getFormattedLabel(config.getTargetTokenName()), c);
 			
+			c.gridx = 5;
+			String val = getCurrentValue(config.getTargetTokenName());
+			listPanel.add(getFormattedLabel(val), c);
+
+			JButton editEntryBtn = new JButton("\u270F");
+			editEntryBtn.setToolTipText("Edit Sync Rule");
+			editEntryBtn.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					triggerNameInput.setText(config.getTriggerHeaderName());
+					triggerValueInput.setText(config.getTriggerHeaderValue());
+					sourceNameInput.setText(config.getSourceHeaderName());
+					regexInput.setText(config.getExtractionRegex());
+					targetTokenInput.setText(config.getTargetTokenName());
+					removeGivenConfig(config);
+					updateAutoSyncList();
+					SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
+				}
+			});
+			c.gridx = 6;
+			listPanel.add(editEntryBtn, c);
+
 			JButton deleteEntryBtn = new JButton();
 			deleteEntryBtn.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
 			deleteEntryBtn.addActionListener(new ActionListener() {
@@ -141,11 +193,12 @@ public class AutoSyncDialog extends JDialog {
 					SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
 				}
 			});
-			c.gridx = 5;
+			c.gridx = 7;
 			listPanel.add(deleteEntryBtn, c);
 			c.gridy++;
 		}
 		c.insets = new Insets(10, 5, 10, 0);
+		c.gridx = 7;
 		listPanel.add(okButton, c);
 		listPanel.revalidate();
 		listPanel.repaint();

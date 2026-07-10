@@ -23,21 +23,21 @@ public class HttpListener implements IHttpListener, IProxyListener {
 		if (toolFlag == IBurpExtenderCallbacks.TOOL_PROXY && messageIsRequest) {
 			performLiveProxySync(messageInfo);
 		}
-		
-		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {		
+
+		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {
 			if(!isFiltered(toolFlag, messageInfo)) {
 				config.performAuthAnalyzerRequest(messageInfo);
 			}
 		}
 	}
 
-	private void performLiveProxySync(IHttpRequestResponse messageInfo) {
+	public static void performLiveProxySync(IHttpRequestResponse messageInfo) {
 		IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(messageInfo);
 		List<String> headers = requestInfo.getHeaders();
-		
-		for(com.protect7.authanalyzer.entities.Session session : config.getSessions()) {
+
+		for(com.protect7.authanalyzer.entities.Session session : CurrentConfig.getCurrentConfig().getSessions()) {
 			if (session.getAutoSyncList() == null || session.getAutoSyncList().isEmpty()) continue;
-			
+
 			for(com.protect7.authanalyzer.entities.AutoSyncConfig syncConfig : session.getAutoSyncList()) {
 				// Check trigger
 				boolean triggerMatched = false;
@@ -50,14 +50,14 @@ public class HttpListener implements IHttpListener, IProxyListener {
 						}
 					}
 				}
-				
+
 				if (triggerMatched) {
 					// Extract value from source header
 					String extractedValue = null;
 					for (String header : headers) {
 						if (header.toLowerCase().startsWith(syncConfig.getSourceHeaderName().toLowerCase() + ":")) {
 							String sourceValue = header.substring(header.indexOf(":") + 1).trim();
-							
+
 							if (syncConfig.getExtractionRegex() != null && !syncConfig.getExtractionRegex().isEmpty()) {
 								try {
 									Pattern pattern = Pattern.compile(syncConfig.getExtractionRegex());
@@ -78,7 +78,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 							break;
 						}
 					}
-					
+
 					if (extractedValue != null) {
 						// Update Target Token
 						for (com.protect7.authanalyzer.entities.Token token : session.getTokens()) {
@@ -119,7 +119,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 			}
 		}
 	}
-	
+
 	private boolean isFiltered(int toolFlag, IHttpRequestResponse messageInfo) {
 		boolean isFiltered = false;
 		IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(messageInfo);

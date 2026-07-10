@@ -553,6 +553,27 @@ public class ConfigurationPanel extends JPanel {
 		}
 		for (String session : sessionPanelMap.keySet()) {
 			SessionPanel sessionPanel = sessionPanelMap.get(session);
+
+			// Automatically register any target tokens from Live Proxy Sync that do not exist yet
+			if (sessionPanel.getAutoSyncList() != null) {
+				for (AutoSyncConfig syncConfig : sessionPanel.getAutoSyncList()) {
+					String targetTokenName = syncConfig.getTargetTokenName();
+					if (targetTokenName != null && !targetTokenName.trim().isEmpty()) {
+						boolean tokenExists = false;
+						for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
+							if (tokenPanel.getTokenName().equals(targetTokenName.trim())) {
+								tokenExists = true;
+								break;
+							}
+						}
+						if (!tokenExists) {
+							TokenPanel newTokenPanel = sessionPanel.addToken(targetTokenName.trim());
+							newTokenPanel.setTokenValueComboBox(true, false, false, false); // Set to Auto Extract
+						}
+					}
+				}
+			}
+
 			ArrayList<Token> tokenList = new ArrayList<Token>();
 			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
 				Token token = new TokenBuilder()

@@ -68,6 +68,22 @@ public class RequestModifHelper {
 				}
 			}
 		}
+
+		// Automatically replace or remove headers if their name matches a token
+		for (Token token : session.getTokens()) {
+			String headerKey = token.getName().toLowerCase() + ":";
+			for (int i = 0; i < headers.size(); i++) {
+				if (headers.get(i).toLowerCase().startsWith(headerKey)) {
+					if (token.isRemove()) {
+						headers.remove(i);
+					} else if (token.getValue() != null) {
+						headers.set(i, token.getName() + ": " + token.getValue());
+					}
+					break;
+				}
+			}
+		}
+
 		return headers;
 	}
 	
