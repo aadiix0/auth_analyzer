@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -25,6 +26,7 @@ import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
 import com.protect7.authanalyzer.util.CurrentConfig;
+import com.protect7.authanalyzer.util.Setting;
 
 public class AutoSyncDialog extends JDialog {
 
@@ -41,6 +43,7 @@ public class AutoSyncDialog extends JDialog {
 	private final PlaceholderTextField sourceNameInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final PlaceholderTextField regexInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final PlaceholderTextField targetTokenInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
+	private final JCheckBox syncFromAllToolsCheckbox = new JCheckBox("Sync from All Tools (includes Repeater, Manual repeats, etc.)");
 	
 	private final JButton addEntryButton = new JButton("\u2795");
 	private final JButton okButton = new JButton("OK");
@@ -56,6 +59,11 @@ public class AutoSyncDialog extends JDialog {
 		regexInput.setPlaceholder("Optional regex");
 		targetTokenInput.setPlaceholder("Token name");
 		
+		syncFromAllToolsCheckbox.setSelected(Setting.getValueAsBoolean(Setting.Item.LIVE_PROXY_SYNC_FROM_ALL_TOOLS));
+		syncFromAllToolsCheckbox.addActionListener(e -> {
+			Setting.setValue(Setting.Item.LIVE_PROXY_SYNC_FROM_ALL_TOOLS, String.valueOf(syncFromAllToolsCheckbox.isSelected()));
+		});
+
 		listPanel.setLayout(new GridBagLayout());
 		listPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
@@ -99,7 +107,7 @@ public class AutoSyncDialog extends JDialog {
 		} else {
 			// Fallback to UI TokenPanel
 			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-				if (tokenPanel.getTokenName().equals(targetTokenName)) {
+				if (tokenPanel.getTokenName().equalsIgnoreCase(targetTokenName)) {
 					String val = tokenPanel.getStaticTokenValue();
 					return val != null ? val : "";
 				}
@@ -111,12 +119,16 @@ public class AutoSyncDialog extends JDialog {
 	private void updateAutoSyncList() {
 		listPanel.removeAll();
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.insets = new Insets(0, 5, 20, 0);
+		c.insets = new Insets(0, 5, 10, 0);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.gridwidth = 8;
 		listPanel.add(new JLabel(INFO_TEXT), c);
 		
+		c.gridy++;
+		c.insets = new Insets(0, 5, 15, 0);
+		listPanel.add(syncFromAllToolsCheckbox, c);
+
 		c.insets = new Insets(0, 5, 5, 0);
 		c.gridwidth = 1;
 		c.gridy++;
