@@ -2,6 +2,7 @@ package com.protect7.authanalyzer.controller;
 
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.util.CurrentConfig;
+import com.protect7.authanalyzer.util.Setting;
 import burp.BurpExtender;
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpListener;
@@ -20,8 +21,11 @@ public class HttpListener implements IHttpListener, IProxyListener {
 
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-		if (toolFlag == IBurpExtenderCallbacks.TOOL_PROXY && messageIsRequest) {
-			performLiveProxySync(messageInfo);
+		if (messageIsRequest) {
+			boolean syncFromAllTools = Setting.getValueAsBoolean(Setting.Item.LIVE_PROXY_SYNC_FROM_ALL_TOOLS);
+			if (toolFlag == IBurpExtenderCallbacks.TOOL_PROXY || syncFromAllTools) {
+				performLiveProxySync(messageInfo);
+			}
 		}
 
 		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {
@@ -71,6 +75,20 @@ public class HttpListener implements IHttpListener, IProxyListener {
 									}
 								} catch (Exception e) {
 									BurpExtender.callbacks.printError("Invalid regex in Live Proxy Sync: " + e.getMessage());
+								}
+							} else if (syncConfig.getSourceHeaderName().equalsIgnoreCase("Cookie")) {
+								// Automatically extract the cookie value matching targetTokenName
+								String cookieNamePattern = syncConfig.getTargetTokenName() + "=";
+								int cookieStart = sourceValue.indexOf(cookieNamePattern);
+								if (cookieStart != -1) {
+									cookieStart += cookieNamePattern.length();
+									int cookieEnd = sourceValue.indexOf(";", cookieStart);
+									if (cookieEnd == -1) {
+										cookieEnd = sourceValue.length();
+									}
+									extractedValue = sourceValue.substring(cookieStart, cookieEnd).trim();
+								} else {
+									extractedValue = sourceValue;
 								}
 							} else {
 								extractedValue = sourceValue;

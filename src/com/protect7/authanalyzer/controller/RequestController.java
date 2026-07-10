@@ -41,6 +41,13 @@ public class RequestController {
 				originalResponseInfo = BurpExtender.callbacks.getHelpers()
 				.analyzeResponse(originalRequestResponse.getResponse());
 			}
+
+			// If sync from all tools is enabled, trigger live proxy sync on analyzed request
+			boolean syncFromAllTools = com.protect7.authanalyzer.util.Setting.getValueAsBoolean(com.protect7.authanalyzer.util.Setting.Item.LIVE_PROXY_SYNC_FROM_ALL_TOOLS);
+			if (syncFromAllTools) {
+				HttpListener.performLiveProxySync(originalRequestResponse);
+			}
+
 			for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
 				boolean isFiltered = false;
 				if(!session.getStatusPanel().isRunning()) {
