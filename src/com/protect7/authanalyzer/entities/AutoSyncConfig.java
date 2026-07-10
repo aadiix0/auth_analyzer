@@ -1,0 +1,59 @@
+package com.protect7.authanalyzer.entities;
+
+public class AutoSyncConfig {
+
+	private String triggerHeaderName;
+	private String triggerHeaderValue;
+	private String sourceHeaderName;
+	private String extractionRegex;
+	private String targetTokenName;
+	
+	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
+			String extractionRegex, String targetTokenName) {
+		this.triggerHeaderName = triggerHeaderName;
+		this.triggerHeaderValue = triggerHeaderValue;
+		this.sourceHeaderName = sourceHeaderName;
+		this.extractionRegex = extractionRegex;
+		this.targetTokenName = targetTokenName;
+	}
+
+	public String getTriggerHeaderName() {
+		return triggerHeaderName;
+	}
+
+	public void setTriggerHeaderName(String triggerHeaderName) {
+		this.triggerHeaderName = triggerHeaderName;
+	}
+
+	public String getTriggerHeaderValue() {
+		return triggerHeaderValue;
+	}
+
+	public void setTriggerHeaderValue(String triggerHeaderValue) {
+		this.triggerHeaderValue = triggerHeaderValue;
+	}
+
+	public String getSourceHeaderName() {
+		return sourceHeaderName;
+	}
+
+	public void setSourceHeaderName(String sourceHeaderName) {
+		this.sourceHeaderName = sourceHeaderName;
+	}
+
+	public String getExtractionRegex() {
+		return extractionRegex;
+	}
+
+	public void setExtractionRegex(String extractionRegex) {
+		this.extractionRegex = extractionRegex;
+	}
+
+	public String getTargetTokenName() {
+		return targetTokenName;
+	}
+
+	public void setTargetTokenName(String targetTokenName) {
+		this.targetTokenName = targetTokenName;
+	}
+}
