@@ -12,6 +12,7 @@ import burp.IProxyListener;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
+import javax.swing.SwingUtilities;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
 
@@ -77,17 +78,22 @@ public class HttpListener implements IHttpListener, IProxyListener {
 									BurpExtender.callbacks.printError("Invalid regex in Live Proxy Sync: " + e.getMessage());
 								}
 							} else if (syncConfig.getSourceHeaderName().equalsIgnoreCase("Cookie")) {
-								// Automatically extract the cookie value matching targetTokenName
-								String cookieNamePattern = syncConfig.getTargetTokenName() + "=";
-								int cookieStart = sourceValue.indexOf(cookieNamePattern);
-								if (cookieStart != -1) {
-									cookieStart += cookieNamePattern.length();
-									int cookieEnd = sourceValue.indexOf(";", cookieStart);
-									if (cookieEnd == -1) {
-										cookieEnd = sourceValue.length();
+								// Robust case-insensitive cookie parsing
+								String[] cookies = sourceValue.split(";");
+								for (String cookie : cookies) {
+									cookie = cookie.trim();
+									int eqIndex = cookie.indexOf("=");
+									if (eqIndex != -1) {
+										String name = cookie.substring(0, eqIndex).trim();
+										String val = cookie.substring(eqIndex + 1).trim();
+										if (name.equalsIgnoreCase(syncConfig.getTargetTokenName())) {
+											extractedValue = val;
+											break;
+										}
 									}
-									extractedValue = sourceValue.substring(cookieStart, cookieEnd).trim();
-								} else {
+								}
+								// Fallback if not found in split
+								if (extractedValue == null) {
 									extractedValue = sourceValue;
 								}
 							} else {
@@ -98,30 +104,87 @@ public class HttpListener implements IHttpListener, IProxyListener {
 					}
 
 					if (extractedValue != null) {
-						// Update Target Token
+						// Check if Target Token exists
+						com.protect7.authanalyzer.entities.Token targetToken = null;
 						for (com.protect7.authanalyzer.entities.Token token : session.getTokens()) {
-							if (token.getName().equals(syncConfig.getTargetTokenName())) {
-								if (token.getValue() == null || !token.getValue().equals(extractedValue)) {
-									token.setValue(extractedValue);
-									BurpExtender.callbacks.issueAlert("[Live Proxy Sync] Session '" + session.getName() + "' updated token '" + token.getName() + "'.");
-									// Try to update UI if stopped (and SessionPanel is visible)
-									com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = BurpExtender.mainPanel.getConfigurationPanel().getSessionPanelByName(session.getName());
-									if (sessionPanel != null) {
-										for (com.protect7.authanalyzer.gui.entity.TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-											if (tokenPanel.getTokenName().equals(token.getName())) {
-												tokenPanel.setGenericTextFieldText(extractedValue);
-												break;
-											}
-										}
-									}
-									// Update Status UI if running (StatusPanel is visible)
-									if (session.getStatusPanel() != null) {
-										session.getStatusPanel().updateTokenStatus(token);
-									}
-								}
+							if (token.getName().equalsIgnoreCase(syncConfig.getTargetTokenName())) {
+								targetToken = token;
 								break;
 							}
 						}
+
+						boolean isNewToken = false;
+						if (targetToken == null) {
+							isNewToken = true;
+							// Token doesn't exist, let's create and add it on-the-fly!
+							targetToken = new com.protect7.authanalyzer.entities.TokenBuilder()
+									.setName(syncConfig.getTargetTokenName())
+									.setIsAutoExtract(true)
+									.setExtractName(syncConfig.getTargetTokenName())
+									.setValue(extractedValue)
+									.build();
+							session.getTokens().add(targetToken);
+
+							// Also update UI TokenPanel so it shows up in UI
+							final String finalExtractedValue = extractedValue;
+							SwingUtilities.invokeLater(() -> {
+								try {
+									com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = BurpExtender.mainPanel.getConfigurationPanel().getSessionPanelByName(session.getName());
+									if (sessionPanel != null) {
+										boolean tokenPanelExists = false;
+										for (com.protect7.authanalyzer.gui.entity.TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
+											if (tokenPanel.getTokenName().equalsIgnoreCase(syncConfig.getTargetTokenName())) {
+												tokenPanelExists = true;
+												break;
+											}
+										}
+										if (!tokenPanelExists) {
+											com.protect7.authanalyzer.gui.entity.TokenPanel newTokenPanel = sessionPanel.addToken(syncConfig.getTargetTokenName());
+											newTokenPanel.setTokenValueComboBox(true, false, false, false); // Set to Auto Extract
+											newTokenPanel.setGenericTextFieldText(finalExtractedValue);
+										}
+									}
+								} catch (Exception e) {
+									// Safe catch
+								}
+							});
+						} else {
+							// Token exists, update its value
+							if (targetToken.getValue() == null || !targetToken.getValue().equals(extractedValue)) {
+								targetToken.setValue(extractedValue);
+							}
+						}
+
+						// Alert and update UI
+						final com.protect7.authanalyzer.entities.Token finalToken = targetToken;
+						final String finalValue = extractedValue;
+						final boolean finalIsNewToken = isNewToken;
+						BurpExtender.callbacks.issueAlert("[Live Proxy Sync] Session '" + session.getName() + "' updated token '" + finalToken.getName() + "'.");
+
+						SwingUtilities.invokeLater(() -> {
+							try {
+								// Update stopped UI text field
+								com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = BurpExtender.mainPanel.getConfigurationPanel().getSessionPanelByName(session.getName());
+								if (sessionPanel != null) {
+									for (com.protect7.authanalyzer.gui.entity.TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
+										if (tokenPanel.getTokenName().equalsIgnoreCase(finalToken.getName())) {
+											tokenPanel.setGenericTextFieldText(finalValue);
+											break;
+										}
+									}
+									// If it was newly created, re-initialize status panel so that the new token is rendered!
+									if (finalIsNewToken && session.getStatusPanel() != null) {
+										session.getStatusPanel().init(session);
+									}
+								}
+								// Update running Status Panel
+								if (session.getStatusPanel() != null) {
+									session.getStatusPanel().updateTokenStatus(finalToken);
+								}
+							} catch (Exception e) {
+								// Safe catch
+							}
+						});
 					}
 				}
 			}
