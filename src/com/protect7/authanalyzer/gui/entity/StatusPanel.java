@@ -14,11 +14,12 @@ import javax.swing.JPanel;
 import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.entities.AutoSyncConfig;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.GenericHelper;
 
 public class StatusPanel extends JPanel{
-	
+
 	private final JLabel headerLabel = new JLabel("<html><strong>Header(s) to Replace</strong></html>");
 	private final JLabel headerToReplaceValue = new JLabel("");
 	private final JLabel headerRemoveLabel = new JLabel("<html><strong>Header(s) to Remove</strong></html>");
@@ -33,7 +34,7 @@ public class StatusPanel extends JPanel{
 	private int amountOfFilteredRequests = 0;
 	private final ImageIcon refreshIcon = new ImageIcon(getClass().getResource("/refresh.png"));
 	private final ImageIcon eraseIcon = new ImageIcon(getClass().getResource("/erase.png"));
-	
+
 	private static final long serialVersionUID = -4518448060103739997L;
 
 	public void init(Session session) {
@@ -47,12 +48,12 @@ public class StatusPanel extends JPanel{
 		c.insets = new Insets(10, 0, 0, 0);
 		headerLabel.putClientProperty("html.disable", null);
 		add(headerLabel, c);
-		
+
 		c.gridx = 1;
 		c.anchor = GridBagConstraints.NORTH;
 		amountOfFilteredRequestsLabel.setText("");
 		add(amountOfFilteredRequestsLabel, c);
-		
+
 		c.gridwidth = 2;
 		c.gridx = 2;
 		c.anchor = GridBagConstraints.WEST;
@@ -70,9 +71,9 @@ public class StatusPanel extends JPanel{
 				onOffSwitch.setText(SESSION_STARTED_TEXT);
 				running = true;
 			}
-		});		
+		});
 		add(onOffSwitch, c);
-		
+
 		c.gridwidth = 4;
 		c.gridx = 0;
 		c.gridy++;
@@ -89,7 +90,7 @@ public class StatusPanel extends JPanel{
 			headerLabel.putClientProperty("html.disable", null);
 			headerToReplaceValue.setVisible(true);
 		}
-	
+
 		if(session.isRemoveHeaders()) {
 			c.gridy++;
 			c.insets = new Insets(10, 0, 0, 0);
@@ -106,11 +107,11 @@ public class StatusPanel extends JPanel{
 				headerToRemoveValue.setText(format(session.getHeadersToRemove(), session));
 			}
 		}
-		
+
 		c.insets = new Insets(10, 0, 0, 0);
 		c.gridy++;
 		c.fill = GridBagConstraints.HORIZONTAL;
-		if(session.getTokens().size() == 0) {
+		if(session.getTokens().size() == 0 && (session.getAutoSyncList() == null || session.getAutoSyncList().size() == 0)) {
 			JLabel dummyLabel = new JLabel("<html><p style='width:490px'>&nbsp;</p></html>");
 			dummyLabel.putClientProperty("html.disable", null);
 			c.gridwidth = 2;
@@ -158,6 +159,36 @@ public class StatusPanel extends JPanel{
 			}
 			c.gridy++;
 		}
+
+		// Display Live Proxy Sync target tokens dynamically in StatusPanel!
+		if(session.getAutoSyncList() != null) {
+			for (AutoSyncConfig syncConfig : session.getAutoSyncList()) {
+				c.gridwidth = 2;
+				c.gridx = 0;
+				c.anchor = GridBagConstraints.WEST;
+				JLabel syncLabel = new JLabel(getSyncConfigText(syncConfig));
+				syncLabel.putClientProperty("html.disable", null);
+				tokenLabelMap.put("sync_" + syncConfig.getTargetTokenName(), syncLabel);
+				add(syncLabel, c);
+
+				c.gridx = 2;
+				c.gridwidth = 1;
+				c.fill = GridBagConstraints.NONE;
+				JButton eraseButton = new JButton(eraseIcon);
+				eraseButton.setToolTipText("Erase Value");
+				eraseButtonMap.put("sync_" + syncConfig.getTargetTokenName(), eraseButton);
+				if (syncConfig.getCurrentValue() == null || syncConfig.getCurrentValue().isEmpty()) {
+					eraseButton.setEnabled(false);
+				}
+				eraseButton.addActionListener(e -> {
+					syncConfig.setCurrentValue("");
+					updateSyncConfigStatus(syncConfig);
+				});
+				add(eraseButton, c);
+				c.gridy++;
+			}
+		}
+
 		if(session.getMatchAndReplaceList().size() > 0) {
 			c.gridwidth = 2;
 			c.gridx = 0;
@@ -179,7 +210,37 @@ public class StatusPanel extends JPanel{
 			c.gridy++;
 		}
 	}
-	
+
+	private String getSyncConfigText(AutoSyncConfig syncConfig) {
+		String tokenInfo = "Live Sync Target (Trigger: " + syncConfig.getTriggerHeaderName() + "=" + syncConfig.getTriggerHeaderValue() + ")";
+		String tokenValue = "<span>Value: <code>null</code></span>";
+		if (syncConfig.getCurrentValue() != null && !syncConfig.getCurrentValue().isEmpty()) {
+			String value;
+			if (syncConfig.getCurrentValue().length() > 80) {
+				value = syncConfig.getCurrentValue().substring(0, 80) + "...";
+			} else {
+				value = syncConfig.getCurrentValue();
+			}
+			tokenValue = "Value: <code style='color:green'>" + value.replace("<", "&lt;") + "</code>";
+		}
+		return "<html><p style='width:500px'><strong>" + syncConfig.getTargetTokenName().replace("<", "&lt;").replace("\n", "<br>") +
+				"</strong> ("+tokenInfo+")</p> <p style='width:500px'>" +  tokenValue.replace("\n", "<br>") + "</p></html>";
+	}
+
+	public void updateSyncConfigStatus(AutoSyncConfig syncConfig) {
+		JLabel syncLabel = tokenLabelMap.get("sync_" + syncConfig.getTargetTokenName());
+		if (syncLabel != null) {
+			syncLabel.putClientProperty("html.disable", null);
+			syncLabel.setText(getSyncConfigText(syncConfig));
+			GenericHelper.uiUpdateAnimation(syncLabel, new Color(0, 153, 0));
+			if (syncConfig.getCurrentValue() != null && !syncConfig.getCurrentValue().isEmpty()) {
+				if (eraseButtonMap.get("sync_" + syncConfig.getTargetTokenName()) != null) {
+					eraseButtonMap.get("sync_" + syncConfig.getTargetTokenName()).setEnabled(true);
+				}
+			}
+		}
+	}
+
 	private String getTokenText(Token token) {
 		String tokenInfo = "";
 		if(token.isAutoExtract()) {
@@ -189,7 +250,7 @@ public class StatusPanel extends JPanel{
 			tokenInfo = "Static Value";
 		}
 		if(token.isFromToString()) {
-			tokenInfo = "Extract value from[" + token.getGrepFromString().replace("<", "&lt;") + 
+			tokenInfo = "Extract value from[" + token.getGrepFromString().replace("<", "&lt;") +
 					"] to [" + token.getGrepToString().replace("<", "&lt;") + "]";
 		}
 		if(token.isPromptForInput()) {
@@ -215,7 +276,7 @@ public class StatusPanel extends JPanel{
 				value = token.getValue();
 			}
 			if(token.isFromToString() || token.isAutoExtract()) {
-				tokenValue = "Value: <code style='color:green'>" + value.replace("<", "&lt;") + "</code>";				
+				tokenValue = "Value: <code style='color:green'>" + value.replace("<", "&lt;") + "</code>";
 			}
 			else {
 				tokenValue = "Value: <code style='color:blue'>" + value.replace("<", "&lt;") + "</code>";
@@ -224,10 +285,10 @@ public class StatusPanel extends JPanel{
 		if(token.isRemove()) {
 			tokenValue = "Value: <code style='color:red'>[Remove Parameter]</code>";
 		}
-		return "<html><p style='width:500px'><strong>" + token.getName().replace("<", "&lt;").replace("\n", "<br>") + 
+		return "<html><p style='width:500px'><strong>" + token.getName().replace("<", "&lt;").replace("\n", "<br>") +
 				"</strong> ("+tokenInfo+")</p> <p style='width:500px'>" +  tokenValue.replace("\n", "<br>") + "</p></html>";
 	}
-	
+
 	private String format(String text, Session session) {
 		String htmlString = "<html><p style='width:600px'>";
 		for(String line : text.split("\n")) {
@@ -244,35 +305,37 @@ public class StatusPanel extends JPanel{
 		//String htmlString = "<html><p style='width:600px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
 		return htmlString;
 	}
-	
+
 	private String formatMatchAndReplaceText(String text) {
 		if(text.length() > 18) {
 			return text.substring(0, 15) + "...";
 		}
 		return text;
 	}
-	
+
 	public boolean isRunning() {
 		return running;
 	}
-	
+
 	public void incrementAmountOfFitleredRequests() {
 		amountOfFilteredRequests++;
 		amountOfFilteredRequestsLabel.setText("Amount of Filtered Requests: " + amountOfFilteredRequests);
 		GenericHelper.uiUpdateAnimation(amountOfFilteredRequestsLabel, Color.RED);
 	}
-	
+
 	public void updateTokenStatus(Token token) {
 		JLabel tokenLabel = tokenLabelMap.get(token.getName());
-		tokenLabel.putClientProperty("html.disable", null);
-		tokenLabel.setText(getTokenText(token));
-		GenericHelper.uiUpdateAnimation(tokenLabel, new Color(0, 153, 0));
-		if(token.getValue() != null) {
-			if(refreshButtonMap.get(token.getName()) != null) {
-				refreshButtonMap.get(token.getName()).setEnabled(true);
-			}
-			if(eraseButtonMap.get(token.getName()) != null) {
-				eraseButtonMap.get(token.getName()).setEnabled(true);
+		if (tokenLabel != null) {
+			tokenLabel.putClientProperty("html.disable", null);
+			tokenLabel.setText(getTokenText(token));
+			GenericHelper.uiUpdateAnimation(tokenLabel, new Color(0, 153, 0));
+			if(token.getValue() != null) {
+				if(refreshButtonMap.get(token.getName()) != null) {
+					refreshButtonMap.get(token.getName()).setEnabled(true);
+				}
+				if(eraseButtonMap.get(token.getName()) != null) {
+					eraseButtonMap.get(token.getName()).setEnabled(true);
+				}
 			}
 		}
 	}
