@@ -87,29 +87,45 @@ public class AutoSyncDialog extends JDialog {
 			addAutoSyncConfig(triggerNameInput.getText(), triggerValueInput.getText(), sourceNameInput.getText(), regexInput.getText(), targetTokenInput.getText());
 			dispose();
 		});
+
+		// Lightweight auto-refresh timer to update current synced values in real-time
+		javax.swing.Timer refreshTimer = new javax.swing.Timer(1000, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (isShowing()) {
+					updateCurrentValuesOnly();
+				}
+			}
+		});
+		refreshTimer.start();
 			
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
+				refreshTimer.stop();
 				sessionPanel.updateLiveProxySyncButtonText();
 			}
 		});
 	}
 
+	private void updateCurrentValuesOnly() {
+		// Only refresh if the user is not actively focusing on one of the inputs
+		if (!triggerNameInput.isFocusOwner() && !triggerValueInput.isFocusOwner() &&
+				!sourceNameInput.isFocusOwner() && !regexInput.isFocusOwner() &&
+				!targetTokenInput.isFocusOwner()) {
+			updateAutoSyncList();
+		}
+	}
+
 	private String getCurrentValue(String targetTokenName) {
 		Session session = CurrentConfig.getCurrentConfig().getSessionByName(sessionPanel.getSessionName());
 		if (session != null) {
-			Token token = session.getTokenByName(targetTokenName);
-			if (token != null) {
-				String val = token.getValue();
-				return val != null ? val : "";
-			}
-		} else {
-			// Fallback to UI TokenPanel
-			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-				if (tokenPanel.getTokenName().equalsIgnoreCase(targetTokenName)) {
-					String val = tokenPanel.getStaticTokenValue();
-					return val != null ? val : "";
+			if (session.getAutoSyncList() != null) {
+				for (AutoSyncConfig syncConfig : session.getAutoSyncList()) {
+					if (syncConfig.getTargetTokenName().equalsIgnoreCase(targetTokenName)) {
+						String val = syncConfig.getCurrentValue();
+						return val != null ? val : "";
+					}
 				}
 			}
 		}
@@ -196,7 +212,7 @@ public class AutoSyncDialog extends JDialog {
 			listPanel.add(editEntryBtn, c);
 
 			JButton deleteEntryBtn = new JButton();
-			deleteEntryBtn.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
+			deleteEntryBtn.setIcon(new ImageIcon(getClass().getResource("/delete.png")));
 			deleteEntryBtn.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {

@@ -49,7 +49,7 @@ public class HintCheckBox extends JPanel {
 		setAlignmentX(JPanel.LEFT_ALIGNMENT);
 		add(checkBox);
 		add(Box.createRigidArea(new Dimension(5, 0)));
-		ImageIcon hintIcon = new ImageIcon(HintCheckBox.class.getClassLoader().getResource("info_icon.png"));
+		ImageIcon hintIcon = new ImageIcon(HintCheckBox.class.getResource("/info_icon.png"));
 		JLabel iconLabel = new JLabel(hintIcon);
 		add(iconLabel);
 		dialog.setUndecorated(true); 

@@ -99,7 +99,7 @@ public class MatchAndReplaceDialog extends JDialog {
 			c.gridx = 1;
 			listPanel.add(getFormattedLabel(matchAndReplace.getReplace()), c);
 			JButton deleteEntryBtn = new JButton();
-			deleteEntryBtn.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
+			deleteEntryBtn.setIcon(new ImageIcon(getClass().getResource("/delete.png")));
 			deleteEntryBtn.addActionListener(new ActionListener() {
 
 				@Override

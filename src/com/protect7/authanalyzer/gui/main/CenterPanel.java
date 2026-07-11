@@ -63,7 +63,7 @@ public class CenterPanel extends JPanel {
 	private final MainPanel mainPanel;
 	private final String TABLE_SETTINGS = "TABLE_SETTINGS";
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private final ImageIcon loaderImageIcon = new ImageIcon(this.getClass().getClassLoader().getResource("loader.gif"));
+	private final ImageIcon loaderImageIcon = new ImageIcon(getClass().getResource("/loader.gif"));
 	private final JTable table;
 	private final JPanel tablePanel = new JPanel(new BorderLayout());
 	private final ListSelectionModel selectionModel;
@@ -110,7 +110,7 @@ public class CenterPanel extends JPanel {
 		tablePanel.setBorder(BorderFactory.createLineBorder(Color.gray));
 		JPanel tableControlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 5));
 		JButton filterButton = new JButton();
-		filterButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("filter.png")));
+		filterButton.setIcon(new ImageIcon(getClass().getResource("/filter.png")));
 		filterButton.addActionListener(e -> showTableFilterDialog(tableControlPanel));
 		filterText = new PlaceholderTextField(20);
 		filterText.setPlaceholder("Enter Search Pattern...");
@@ -121,7 +121,7 @@ public class CenterPanel extends JPanel {
 		tableControlPanel.add(searchPanel);
 		tableControlPanel.add(filterButton);
 		JButton settingsButton = new JButton();
-		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
+		settingsButton.setIcon(new ImageIcon(getClass().getResource("/settings.png")));
 		settingsButton.addActionListener(e -> showTableSettingsDialog(tableControlPanel));
 		tableControlPanel.add(settingsButton);
 		topPanel.add(tableControlPanel, BorderLayout.NORTH);

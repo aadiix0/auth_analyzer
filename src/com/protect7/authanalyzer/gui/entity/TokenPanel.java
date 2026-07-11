@@ -88,13 +88,13 @@ public class TokenPanel extends JPanel {
 		
 		c.gridx++;
 		JButton settingsButton = new JButton();
-		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
+		settingsButton.setIcon(new ImageIcon(getClass().getResource("/settings.png")));
 		settingsButton.addActionListener(e -> new TokenSettingsDialog(this));
 		add(settingsButton, c);
 		
 		c.gridx++;
 		removeButton = new JButton();
-		removeButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
+		removeButton.setIcon(new ImageIcon(getClass().getResource("/delete.png")));
 		add(removeButton, c);
 		
 		tokenValueComboBox.addActionListener(new ActionListener() {

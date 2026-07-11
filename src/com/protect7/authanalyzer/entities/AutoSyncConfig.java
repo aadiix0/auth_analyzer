@@ -7,6 +7,7 @@ public class AutoSyncConfig {
 	private String sourceHeaderName;
 	private String extractionRegex;
 	private String targetTokenName;
+	private String currentValue = "";
 	
 	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
 			String extractionRegex, String targetTokenName) {
@@ -55,5 +56,13 @@ public class AutoSyncConfig {
 
 	public void setTargetTokenName(String targetTokenName) {
 		this.targetTokenName = targetTokenName;
+	}
+
+	public String getCurrentValue() {
+		return currentValue;
+	}
+
+	public void setCurrentValue(String currentValue) {
+		this.currentValue = currentValue;
 	}
 }

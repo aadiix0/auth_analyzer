@@ -12,7 +12,6 @@ import burp.IProxyListener;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
-import javax.swing.SwingUtilities;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
 
@@ -49,7 +48,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 				for (String header : headers) {
 					if (header.toLowerCase().startsWith(syncConfig.getTriggerHeaderName().toLowerCase() + ":")) {
 						String value = header.substring(header.indexOf(":") + 1).trim();
-						if (syncConfig.getTriggerHeaderValue().isEmpty() || value.equals(syncConfig.getTriggerHeaderValue())) {
+						if (syncConfig.getTriggerHeaderValue().isEmpty() || value.equalsIgnoreCase(syncConfig.getTriggerHeaderValue())) {
 							triggerMatched = true;
 							break;
 						}
@@ -104,87 +103,11 @@ public class HttpListener implements IHttpListener, IProxyListener {
 					}
 
 					if (extractedValue != null) {
-						// Check if Target Token exists
-						com.protect7.authanalyzer.entities.Token targetToken = null;
-						for (com.protect7.authanalyzer.entities.Token token : session.getTokens()) {
-							if (token.getName().equalsIgnoreCase(syncConfig.getTargetTokenName())) {
-								targetToken = token;
-								break;
-							}
+						// Store the extracted value privately inside AutoSyncConfig!
+						if (syncConfig.getCurrentValue() == null || !syncConfig.getCurrentValue().equals(extractedValue)) {
+							syncConfig.setCurrentValue(extractedValue);
+							BurpExtender.callbacks.issueAlert("[Live Proxy Sync] Session '" + session.getName() + "' updated sync token '" + syncConfig.getTargetTokenName() + "' to '" + extractedValue + "'.");
 						}
-
-						boolean isNewToken = false;
-						if (targetToken == null) {
-							isNewToken = true;
-							// Token doesn't exist, let's create and add it on-the-fly!
-							targetToken = new com.protect7.authanalyzer.entities.TokenBuilder()
-									.setName(syncConfig.getTargetTokenName())
-									.setIsAutoExtract(true)
-									.setExtractName(syncConfig.getTargetTokenName())
-									.setValue(extractedValue)
-									.build();
-							session.getTokens().add(targetToken);
-
-							// Also update UI TokenPanel so it shows up in UI
-							final String finalExtractedValue = extractedValue;
-							SwingUtilities.invokeLater(() -> {
-								try {
-									com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = BurpExtender.mainPanel.getConfigurationPanel().getSessionPanelByName(session.getName());
-									if (sessionPanel != null) {
-										boolean tokenPanelExists = false;
-										for (com.protect7.authanalyzer.gui.entity.TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-											if (tokenPanel.getTokenName().equalsIgnoreCase(syncConfig.getTargetTokenName())) {
-												tokenPanelExists = true;
-												break;
-											}
-										}
-										if (!tokenPanelExists) {
-											com.protect7.authanalyzer.gui.entity.TokenPanel newTokenPanel = sessionPanel.addToken(syncConfig.getTargetTokenName());
-											newTokenPanel.setTokenValueComboBox(true, false, false, false); // Set to Auto Extract
-											newTokenPanel.setGenericTextFieldText(finalExtractedValue);
-										}
-									}
-								} catch (Exception e) {
-									// Safe catch
-								}
-							});
-						} else {
-							// Token exists, update its value
-							if (targetToken.getValue() == null || !targetToken.getValue().equals(extractedValue)) {
-								targetToken.setValue(extractedValue);
-							}
-						}
-
-						// Alert and update UI
-						final com.protect7.authanalyzer.entities.Token finalToken = targetToken;
-						final String finalValue = extractedValue;
-						final boolean finalIsNewToken = isNewToken;
-						BurpExtender.callbacks.issueAlert("[Live Proxy Sync] Session '" + session.getName() + "' updated token '" + finalToken.getName() + "'.");
-
-						SwingUtilities.invokeLater(() -> {
-							try {
-								// Update stopped UI text field
-								com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = BurpExtender.mainPanel.getConfigurationPanel().getSessionPanelByName(session.getName());
-								if (sessionPanel != null) {
-									for (com.protect7.authanalyzer.gui.entity.TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-										if (tokenPanel.getTokenName().equalsIgnoreCase(finalToken.getName())) {
-											tokenPanel.setGenericTextFieldText(finalValue);
-											break;
-										}
-									}
-									// If it was newly created, re-initialize status panel so that the new token is rendered!
-									if (finalIsNewToken && session.getStatusPanel() != null) {
-										session.getStatusPanel().init(session);
-									}
-								}
-								// Update running Status Panel
-								if (session.getStatusPanel() != null) {
-									session.getStatusPanel().updateTokenStatus(finalToken);
-								}
-							} catch (Exception e) {
-								// Safe catch
-							}
-						});
 					}
 				}
 			}

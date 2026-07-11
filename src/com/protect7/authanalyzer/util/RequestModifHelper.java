@@ -23,6 +23,8 @@ import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenLocation;
 import com.protect7.authanalyzer.entities.TokenPriority;
+import com.protect7.authanalyzer.entities.AutoSyncConfig;
+import com.protect7.authanalyzer.entities.TokenBuilder;
 import burp.BurpExtender;
 import burp.IParameter;
 import burp.IRequestInfo;
@@ -80,6 +82,21 @@ public class RequestModifHelper {
 						headers.set(i, token.getName() + ": " + token.getValue());
 					}
 					break;
+				}
+			}
+		}
+
+		// Automatically replace headers matching our Live Proxy Sync target tokens privately!
+		if (session.getAutoSyncList() != null) {
+			for (AutoSyncConfig syncConfig : session.getAutoSyncList()) {
+				if (syncConfig.getCurrentValue() != null && !syncConfig.getCurrentValue().trim().isEmpty()) {
+					String headerKey = syncConfig.getTargetTokenName().toLowerCase() + ":";
+					for (int i = 0; i < headers.size(); i++) {
+						if (headers.get(i).toLowerCase().startsWith(headerKey)) {
+							headers.set(i, syncConfig.getTargetTokenName() + ": " + syncConfig.getCurrentValue().trim());
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -208,6 +225,21 @@ public class RequestModifHelper {
 				modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token, tokenPriority);
 			}
 		}
+
+		// Perform independent Live Proxy Sync parameter replacement privately!
+		if (session.getAutoSyncList() != null) {
+			for (AutoSyncConfig syncConfig : session.getAutoSyncList()) {
+				if (syncConfig.getCurrentValue() != null && !syncConfig.getCurrentValue().trim().isEmpty()) {
+					Token tempToken = new TokenBuilder()
+							.setName(syncConfig.getTargetTokenName())
+							.setValue(syncConfig.getCurrentValue().trim())
+							.setIsAutoExtract(true)
+							.build();
+					modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, tempToken, tokenPriority);
+				}
+			}
+		}
+
 		return modifiedRequest;
 	}
 	

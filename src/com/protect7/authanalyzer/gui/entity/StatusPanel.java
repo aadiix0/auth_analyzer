@@ -31,8 +31,8 @@ public class StatusPanel extends JPanel{
 	private final HashMap<String, JButton> refreshButtonMap = new HashMap<String, JButton>();
 	private final HashMap<String, JButton> eraseButtonMap = new HashMap<String, JButton>();
 	private int amountOfFilteredRequests = 0;
-	private final ImageIcon refreshIcon = new ImageIcon(this.getClass().getClassLoader().getResource("refresh.png"));
-	private final ImageIcon eraseIcon = new ImageIcon(this.getClass().getClassLoader().getResource("erase.png"));
+	private final ImageIcon refreshIcon = new ImageIcon(getClass().getResource("/refresh.png"));
+	private final ImageIcon eraseIcon = new ImageIcon(getClass().getResource("/erase.png"));
 	
 	private static final long serialVersionUID = -4518448060103739997L;
 
