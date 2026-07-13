@@ -111,10 +111,6 @@ public class HttpListener implements IHttpListener, IProxyListener {
 											}
 										}
 									}
-									// Fallback if not found in split
-									if (extractedValue == null) {
-										extractedValue = sourceValue;
-									}
 								} else {
 									extractedValue = sourceValue;
 								}
