@@ -161,6 +161,15 @@ public class HttpListener implements IHttpListener, IProxyListener {
 
 	@Override
 	public void processProxyMessage(boolean messageIsRequest, IInterceptedProxyMessage message) {
+		try {
+			if (messageIsRequest && message != null && message.getMessageInfo() != null) {
+				// Trigger Live Proxy Sync at the earliest proxy stage, before other extensions strip headers!
+				performLiveProxySync(message.getMessageInfo());
+			}
+		} catch (Exception e) {
+			BurpExtender.callbacks.printError("Error triggering performLiveProxySync in processProxyMessage: " + e.getMessage());
+		}
+
 		if(config.isDropOriginal() && messageIsRequest) {
 			if(!isFiltered(IBurpExtenderCallbacks.TOOL_PROXY, message.getMessageInfo())) {
 				processHttpMessage(IBurpExtenderCallbacks.TOOL_PROXY, true, message.getMessageInfo());
