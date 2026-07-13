@@ -65,7 +65,8 @@ public class ConfigurationPanel extends JPanel {
 	private static final long serialVersionUID = -4278008236240529083L;
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
 	private final String ANALYZER_STOPPED_TEXT = "<html><span style='color:red; font-weight: bold'>&#x26AB;</span> Analyzer Stopped</html>";
-	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
+	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running (All)</html>";
+	private final String ANALYZER_MANUAL_ONLY_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running (Manual Only)</html>";
 	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
 	private final String DROP_REQUEST_TEXT = "Drop Original Requests";
 	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
@@ -77,6 +78,7 @@ public class ConfigurationPanel extends JPanel {
 	private final LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
+	private final String ALL_TRAFFIC_TEXT = "=";
 	private final SessionTabbedPane sessionTabbedPane = new SessionTabbedPane();
 	boolean sessionListChanged = true;
 	private final MainPanel mainPanel;
@@ -200,7 +202,7 @@ public class ConfigurationPanel extends JPanel {
 			}
 		});
 
-		pauseButton.setText(PAUSE_TEXT);
+		pauseButton.setText(ALL_TRAFFIC_TEXT);
 		pauseButton.setEnabled(false);
 		pauseButton.addActionListener(e -> pauseButtonPressed());
 
@@ -488,16 +490,18 @@ public class ConfigurationPanel extends JPanel {
 		if (sessionPanelMap.size() == 0) {
 			JOptionPane.showMessageDialog(this, "No Session Created");
 		} else {
-			if (config.isRunning() || pauseButton.getText().equals(PLAY_TEXT)) {
+			if (config.getAnalyzerState() != CurrentConfig.AnalyzerState.STOPPED) {
 				for (String session : sessionPanelMap.keySet()) {
 					sessionPanelMap.get(session).setStopped();
 				}
 				sessionTabbedPane.setModifEnabled(true);
-				pauseButton.setText(PAUSE_TEXT);
+				pauseButton.setText(ALL_TRAFFIC_TEXT);
 				pauseButton.setEnabled(false);
+				pauseButton.setToolTipText("Analyzer is Stopped");
 				dropOriginalButton.setEnabled(false);
 				setDropOriginalRequest(false);
 				config.setRunning(false);
+				config.setAnalyzerState(CurrentConfig.AnalyzerState.STOPPED);
 				startStopButton.setText(ANALYZER_STOPPED_TEXT);
 			} else {
 				// Validate all defined Tokens first
@@ -529,7 +533,11 @@ public class ConfigurationPanel extends JPanel {
 					sessionTabbedPane.setModifEnabled(false);
 					pauseButton.setEnabled(true);
 					dropOriginalButton.setEnabled(true);
+
+					config.setAnalyzerState(CurrentConfig.AnalyzerState.ALL_TRAFFIC);
 					config.setRunning(true);
+					pauseButton.setText(ALL_TRAFFIC_TEXT);
+					pauseButton.setToolTipText("All Traffic");
 					startStopButton.setText(ANALYZER_STARTED_TEXT);
 					sessionListChanged = false;
 				}
@@ -733,21 +741,29 @@ public class ConfigurationPanel extends JPanel {
 	}
 
 	public void pauseButtonPressed() {
-		if (config.isRunning()) {
+		if (config.getAnalyzerState() == CurrentConfig.AnalyzerState.ALL_TRAFFIC) {
+			config.setAnalyzerState(CurrentConfig.AnalyzerState.PAUSED);
 			config.setRunning(false);
-			pauseButton.setText(PLAY_TEXT);
+			pauseButton.setText(PAUSE_TEXT);
 			startStopButton.setText(ANALYZER_PAUSED_TEXT);
 			pauseButton.setToolTipText("Currently Paused");
-		} else {
+		} else if (config.getAnalyzerState() == CurrentConfig.AnalyzerState.PAUSED) {
+			config.setAnalyzerState(CurrentConfig.AnalyzerState.PLAY_MANUAL_ONLY);
 			config.setRunning(true);
-			pauseButton.setText(PAUSE_TEXT);
+			pauseButton.setText(PLAY_TEXT);
+			startStopButton.setText(ANALYZER_MANUAL_ONLY_TEXT);
+			pauseButton.setToolTipText("Play / Manual Only");
+		} else if (config.getAnalyzerState() == CurrentConfig.AnalyzerState.PLAY_MANUAL_ONLY) {
+			config.setAnalyzerState(CurrentConfig.AnalyzerState.ALL_TRAFFIC);
+			config.setRunning(true);
+			pauseButton.setText(ALL_TRAFFIC_TEXT);
 			startStopButton.setText(ANALYZER_STARTED_TEXT);
-			pauseButton.setToolTipText("Currently Running");
+			pauseButton.setToolTipText("All Traffic");
 		}
 	}
 	
 	public boolean isPaused() {
-		return pauseButton.getText().equals(PLAY_TEXT);
+		return config.getAnalyzerState() == CurrentConfig.AnalyzerState.PAUSED;
 	}
 
 	private String[] getInputArray(Component parentFrame, String message, String value) {

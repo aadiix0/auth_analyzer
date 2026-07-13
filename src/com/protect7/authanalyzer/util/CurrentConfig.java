@@ -25,6 +25,23 @@ public class CurrentConfig {
 	private RequestTableModel tableModel = null;
 	private boolean running = false;
 	private boolean dropOriginal = false;
+
+	public enum AnalyzerState {
+		STOPPED,
+		ALL_TRAFFIC,
+		PLAY_MANUAL_ONLY,
+		PAUSED
+	}
+
+	private AnalyzerState analyzerState = AnalyzerState.STOPPED;
+
+	public AnalyzerState getAnalyzerState() {
+		return analyzerState;
+	}
+
+	public void setAnalyzerState(AnalyzerState state) {
+		this.analyzerState = state;
+	}
 	private volatile int mapId = 0;
 	private boolean respectResponseCodeForSameStatus = true;
 	private boolean respectResponseCodeForSimilarStatus = true; 
@@ -35,21 +52,28 @@ public class CurrentConfig {
 	}
 	
 	public void performAuthAnalyzerRequest(IHttpRequestResponse messageInfo) {
-		analyzerThreadExecutor.execute(new Runnable() {				
-			@Override
-			public void run() {
-				BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
-						analyzerThreadExecutor.getQueue().size());
-				getRequestController().analyze(messageInfo);
-				try {
-					Thread.sleep(delayBetweenRequestsInMilliseconds);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		if (!isRunning()) {
+			return;
+		}
+		try {
+			analyzerThreadExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
+							analyzerThreadExecutor.getQueue().size());
+					getRequestController().analyze(messageInfo);
+					try {
+						Thread.sleep(delayBetweenRequestsInMilliseconds);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
-			}
-		});
-		BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
-				analyzerThreadExecutor.getQueue().size());
+			});
+			BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
+					analyzerThreadExecutor.getQueue().size());
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			// Gracefully handle if the executor was shut down concurrently
+		}
 	}
 	
 	public static CurrentConfig getCurrentConfig(){

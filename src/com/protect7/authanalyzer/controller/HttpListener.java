@@ -29,7 +29,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 			}
 		}
 
-		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {
+		if(config.isRunning() && config.getAnalyzerState() == CurrentConfig.AnalyzerState.ALL_TRAFFIC && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {
 			if(!isFiltered(toolFlag, messageInfo)) {
 				config.performAuthAnalyzerRequest(messageInfo);
 			}
@@ -166,7 +166,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 			BurpExtender.callbacks.printError("Error triggering performLiveProxySync in processProxyMessage: " + e.getMessage());
 		}
 
-		if(config.isDropOriginal() && messageIsRequest) {
+		if(config.isDropOriginal() && messageIsRequest && config.getAnalyzerState() == CurrentConfig.AnalyzerState.ALL_TRAFFIC) {
 			if(!isFiltered(IBurpExtenderCallbacks.TOOL_PROXY, message.getMessageInfo())) {
 				processHttpMessage(IBurpExtenderCallbacks.TOOL_PROXY, true, message.getMessageInfo());
 				message.setInterceptAction(IInterceptedProxyMessage.ACTION_DROP);
