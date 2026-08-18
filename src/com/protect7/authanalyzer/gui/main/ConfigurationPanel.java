@@ -671,7 +671,8 @@ public class ConfigurationPanel extends JPanel {
 					String sourceHeaderName = autoSyncObject.has("sourceHeaderName") ? autoSyncObject.get("sourceHeaderName").getAsString() : "";
 					String extractionRegex = autoSyncObject.has("extractionRegex") ? autoSyncObject.get("extractionRegex").getAsString() : "";
 					String targetTokenName = autoSyncObject.has("targetTokenName") ? autoSyncObject.get("targetTokenName").getAsString() : "";
-					autoSyncList.add(new AutoSyncConfig(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName));
+					String targetHost = autoSyncObject.has("targetHost") ? autoSyncObject.get("targetHost").getAsString() : "";
+					autoSyncList.add(new AutoSyncConfig(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName, targetHost));
 				}
 				sessionPanel.setAutoSyncList(autoSyncList);
 			}

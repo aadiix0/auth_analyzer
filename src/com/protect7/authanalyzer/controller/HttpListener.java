@@ -46,12 +46,39 @@ public class HttpListener implements IHttpListener, IProxyListener {
 			List<String> headers = requestInfo.getHeaders();
 			if (headers == null) return;
 
+			String requestHost = null;
+			if (messageInfo.getHttpService() != null) {
+				requestHost = messageInfo.getHttpService().getHost();
+			}
+			if (requestHost == null || requestHost.isEmpty()) {
+				if (requestInfo.getUrl() != null) {
+					requestHost = requestInfo.getUrl().getHost();
+				}
+			}
+			if (requestHost == null || requestHost.isEmpty()) {
+				for (String header : headers) {
+					if (header != null && header.toLowerCase().startsWith("host:")) {
+						String val = header.substring(5).trim();
+						int colonIndex = val.indexOf(":");
+						if (colonIndex != -1) {
+							requestHost = val.substring(0, colonIndex).trim();
+						} else {
+							requestHost = val;
+						}
+						break;
+					}
+				}
+			}
+
 			for (String sessionName : configPanel.getSessionNames()) {
 				com.protect7.authanalyzer.gui.entity.SessionPanel sessionPanel = configPanel.getSessionPanelByName(sessionName);
 				if (sessionPanel == null || sessionPanel.getAutoSyncList() == null || sessionPanel.getAutoSyncList().isEmpty()) continue;
 
 				for(com.protect7.authanalyzer.entities.AutoSyncConfig syncConfig : sessionPanel.getAutoSyncList()) {
 					if (syncConfig == null) continue;
+					if (!isHostMatch(requestHost, syncConfig.getTargetHost())) {
+						continue;
+					}
 					String triggerName = syncConfig.getTriggerHeaderName();
 					String triggerVal = syncConfig.getTriggerHeaderValue();
 					String sourceName = syncConfig.getSourceHeaderName();
@@ -172,6 +199,46 @@ public class HttpListener implements IHttpListener, IProxyListener {
 				message.setInterceptAction(IInterceptedProxyMessage.ACTION_DROP);
 			}
 		}
+	}
+
+	public static boolean isHostMatch(String requestHost, String targetHostConfig) {
+		if (targetHostConfig == null || targetHostConfig.trim().isEmpty()) {
+			return true;
+		}
+		if (requestHost == null || requestHost.trim().isEmpty()) {
+			return false;
+		}
+		String host = requestHost.trim().toLowerCase();
+		String[] targetPatterns = targetHostConfig.split(",");
+		for (String rawPattern : targetPatterns) {
+			String pattern = rawPattern.trim().toLowerCase();
+			if (pattern.isEmpty()) continue;
+
+			if (host.equals(pattern)) {
+				return true;
+			}
+			if (host.contains(pattern)) {
+				return true;
+			}
+			if (pattern.contains("*")) {
+				String regex = "^" + Pattern.quote(pattern).replace("*", "\\E.*\\Q") + "$";
+				try {
+					if (Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(host).matches()) {
+						return true;
+					}
+				} catch (Exception e) {
+					// Ignore invalid regex
+				}
+			}
+			try {
+				if (Pattern.compile(pattern, Pattern.CASE_INSENSITIVE).matcher(host).find()) {
+					return true;
+				}
+			} catch (Exception e) {
+				// Ignore invalid regex
+			}
+		}
+		return false;
 	}
 
 	private boolean isFiltered(int toolFlag, IHttpRequestResponse messageInfo) {

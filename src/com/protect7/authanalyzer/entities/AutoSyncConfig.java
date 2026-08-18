@@ -7,15 +7,22 @@ public class AutoSyncConfig {
 	private String sourceHeaderName;
 	private String extractionRegex;
 	private String targetTokenName;
+	private String targetHost = "";
 	private String currentValue = "";
 	
 	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
 			String extractionRegex, String targetTokenName) {
+		this(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName, "");
+	}
+
+	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
+			String extractionRegex, String targetTokenName, String targetHost) {
 		this.triggerHeaderName = triggerHeaderName;
 		this.triggerHeaderValue = triggerHeaderValue;
 		this.sourceHeaderName = sourceHeaderName;
 		this.extractionRegex = extractionRegex;
 		this.targetTokenName = targetTokenName;
+		this.targetHost = targetHost != null ? targetHost : "";
 	}
 
 	public String getTriggerHeaderName() {
@@ -56,6 +63,14 @@ public class AutoSyncConfig {
 
 	public void setTargetTokenName(String targetTokenName) {
 		this.targetTokenName = targetTokenName;
+	}
+
+	public String getTargetHost() {
+		return targetHost;
+	}
+
+	public void setTargetHost(String targetHost) {
+		this.targetHost = targetHost != null ? targetHost : "";
 	}
 
 	public String getCurrentValue() {
