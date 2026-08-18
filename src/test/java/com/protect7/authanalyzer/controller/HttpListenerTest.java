@@ -49,9 +49,22 @@ public class HttpListenerTest {
 	}
 
 	@Test
-	public void testIsTriggerValueMatchPrefixAndSubstring() {
-		Assert.assertTrue(HttpListener.isTriggerValueMatch("Bearer eyJhbGci...", "Bearer"));
-		Assert.assertTrue(HttpListener.isTriggerValueMatch("Basic dXNlcjpwYXNz", "Basic"));
-		Assert.assertFalse(HttpListener.isTriggerValueMatch("Basic dXNlcjpwYXNz", "Bearer"));
+	public void testIsTriggerValueMatchExact() {
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("red", "red"));
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("RED", "red"));
+		Assert.assertFalse(HttpListener.isTriggerValueMatch("red_light", "red"));
+	}
+
+	@Test
+	public void testIsValueFilterMatchNullOrEmptyConfig() {
+		Assert.assertTrue(HttpListener.isValueFilterMatch("Bearer eyJhbGci...", null));
+		Assert.assertTrue(HttpListener.isValueFilterMatch("Bearer eyJhbGci...", ""));
+	}
+
+	@Test
+	public void testIsValueFilterMatchPrefixAndSubstring() {
+		Assert.assertTrue(HttpListener.isValueFilterMatch("Bearer eyJhbGci...", "Bearer"));
+		Assert.assertTrue(HttpListener.isValueFilterMatch("Basic dXNlcjpwYXNz", "Basic"));
+		Assert.assertFalse(HttpListener.isValueFilterMatch("Basic dXNlcjpwYXNz", "Bearer"));
 	}
 }

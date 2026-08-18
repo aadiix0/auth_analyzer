@@ -44,6 +44,7 @@ public class AutoSyncDialog extends JDialog {
 	private final PlaceholderTextField regexInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final PlaceholderTextField targetTokenInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final PlaceholderTextField targetHostInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
+	private final PlaceholderTextField valueFilterInput = new PlaceholderTextField(TEXTFIELD_WIDTH);
 	private final JCheckBox syncFromAllToolsCheckbox = new JCheckBox("Sync from All Tools (includes Repeater, Manual repeats, etc.)");
 	
 	private final JButton addEntryButton = new JButton("\u2795");
@@ -57,6 +58,7 @@ public class AutoSyncDialog extends JDialog {
 		triggerNameInput.setPlaceholder("e.g. X-PwnFox-Color");
 		triggerValueInput.setPlaceholder("e.g. red");
 		sourceNameInput.setPlaceholder("e.g. Cookie");
+		valueFilterInput.setPlaceholder("e.g. Bearer (Optional)");
 		regexInput.setPlaceholder("Optional regex");
 		targetTokenInput.setPlaceholder("Token name");
 		targetHostInput.setPlaceholder("e.g. ns.example.com (Optional)");
@@ -72,7 +74,7 @@ public class AutoSyncDialog extends JDialog {
 		addEntryButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				addAutoSyncConfig(triggerNameInput.getText(), triggerValueInput.getText(), sourceNameInput.getText(), regexInput.getText(), targetTokenInput.getText(), targetHostInput.getText());
+				addAutoSyncConfig(triggerNameInput.getText(), triggerValueInput.getText(), sourceNameInput.getText(), regexInput.getText(), targetTokenInput.getText(), targetHostInput.getText(), valueFilterInput.getText());
 				updateAutoSyncList();
 				SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
 			}
@@ -86,7 +88,7 @@ public class AutoSyncDialog extends JDialog {
 		setLocationRelativeTo(sessionPanel);
 		
 		okButton.addActionListener(e -> {
-			addAutoSyncConfig(triggerNameInput.getText(), triggerValueInput.getText(), sourceNameInput.getText(), regexInput.getText(), targetTokenInput.getText(), targetHostInput.getText());
+			addAutoSyncConfig(triggerNameInput.getText(), triggerValueInput.getText(), sourceNameInput.getText(), regexInput.getText(), targetTokenInput.getText(), targetHostInput.getText(), valueFilterInput.getText());
 			dispose();
 		});
 
@@ -114,7 +116,8 @@ public class AutoSyncDialog extends JDialog {
 		// Only refresh if the user is not actively focusing on one of the inputs
 		if (!triggerNameInput.isFocusOwner() && !triggerValueInput.isFocusOwner() &&
 				!sourceNameInput.isFocusOwner() && !regexInput.isFocusOwner() &&
-				!targetTokenInput.isFocusOwner() && !targetHostInput.isFocusOwner()) {
+				!targetTokenInput.isFocusOwner() && !targetHostInput.isFocusOwner() &&
+				!valueFilterInput.isFocusOwner()) {
 			updateAutoSyncList();
 		}
 	}
@@ -140,7 +143,7 @@ public class AutoSyncDialog extends JDialog {
 		c.insets = new Insets(0, 5, 10, 0);
 		c.gridx = 0;
 		c.gridy = 0;
-		c.gridwidth = 9;
+		c.gridwidth = 10;
 		listPanel.add(new JLabel(INFO_TEXT), c);
 		
 		c.gridy++;
@@ -156,12 +159,14 @@ public class AutoSyncDialog extends JDialog {
 		c.gridx = 2;
 		listPanel.add(new JLabel("Source Header:"), c);
 		c.gridx = 3;
-		listPanel.add(new JLabel("Regex (Optional):"), c);
+		listPanel.add(new JLabel("Value Filter (Optional):"), c);
 		c.gridx = 4;
-		listPanel.add(new JLabel("Target Token:"), c);
+		listPanel.add(new JLabel("Regex (Optional):"), c);
 		c.gridx = 5;
-		listPanel.add(new JLabel("Target Host (Optional):"), c);
+		listPanel.add(new JLabel("Target Token:"), c);
 		c.gridx = 6;
+		listPanel.add(new JLabel("Target Host (Optional):"), c);
+		c.gridx = 7;
 		listPanel.add(new JLabel("Current Value:"), c);
 		
 		c.gridx = 0;
@@ -172,14 +177,16 @@ public class AutoSyncDialog extends JDialog {
 		c.gridx = 2;
 		listPanel.add(sourceNameInput, c);
 		c.gridx = 3;
-		listPanel.add(regexInput, c);
+		listPanel.add(valueFilterInput, c);
 		c.gridx = 4;
-		listPanel.add(targetTokenInput, c);
+		listPanel.add(regexInput, c);
 		c.gridx = 5;
-		listPanel.add(targetHostInput, c);
+		listPanel.add(targetTokenInput, c);
 		c.gridx = 6;
-		listPanel.add(getFormattedLabel(""), c);
+		listPanel.add(targetHostInput, c);
 		c.gridx = 7;
+		listPanel.add(getFormattedLabel(""), c);
+		c.gridx = 8;
 		listPanel.add(addEntryButton, c);
 
 		c.gridy++;
@@ -191,13 +198,15 @@ public class AutoSyncDialog extends JDialog {
 			c.gridx = 2;
 			listPanel.add(getFormattedLabel(config.getSourceHeaderName()), c);
 			c.gridx = 3;
-			listPanel.add(getFormattedLabel(config.getExtractionRegex()), c);
+			listPanel.add(getFormattedLabel(config.getValueFilter()), c);
 			c.gridx = 4;
-			listPanel.add(getFormattedLabel(config.getTargetTokenName()), c);
+			listPanel.add(getFormattedLabel(config.getExtractionRegex()), c);
 			c.gridx = 5;
+			listPanel.add(getFormattedLabel(config.getTargetTokenName()), c);
+			c.gridx = 6;
 			listPanel.add(getFormattedLabel(config.getTargetHost()), c);
 
-			c.gridx = 6;
+			c.gridx = 7;
 			String val = getCurrentValue(config.getTargetTokenName());
 			listPanel.add(getFormattedLabel(val), c);
 
@@ -209,6 +218,7 @@ public class AutoSyncDialog extends JDialog {
 					triggerNameInput.setText(config.getTriggerHeaderName());
 					triggerValueInput.setText(config.getTriggerHeaderValue());
 					sourceNameInput.setText(config.getSourceHeaderName());
+					valueFilterInput.setText(config.getValueFilter());
 					regexInput.setText(config.getExtractionRegex());
 					targetTokenInput.setText(config.getTargetTokenName());
 					targetHostInput.setText(config.getTargetHost());
@@ -217,7 +227,7 @@ public class AutoSyncDialog extends JDialog {
 					SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
 				}
 			});
-			c.gridx = 7;
+			c.gridx = 8;
 			listPanel.add(editEntryBtn, c);
 
 			JButton deleteEntryBtn = new JButton();
@@ -230,12 +240,12 @@ public class AutoSyncDialog extends JDialog {
 					SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
 				}
 			});
-			c.gridx = 8;
+			c.gridx = 9;
 			listPanel.add(deleteEntryBtn, c);
 			c.gridy++;
 		}
 		c.insets = new Insets(10, 5, 10, 0);
-		c.gridx = 8;
+		c.gridx = 9;
 		listPanel.add(okButton, c);
 		listPanel.revalidate();
 		listPanel.repaint();
@@ -258,13 +268,14 @@ public class AutoSyncDialog extends JDialog {
 		return label;
 	}
 	
-	private void addAutoSyncConfig(String triggerName, String triggerValue, String sourceName, String regex, String targetToken, String targetHost) {
+	private void addAutoSyncConfig(String triggerName, String triggerValue, String sourceName, String regex, String targetToken, String targetHost, String valueFilter) {
 		if (!triggerName.trim().isEmpty() && !sourceName.trim().isEmpty() && !targetToken.trim().isEmpty()) {
-			AutoSyncConfig newConfig = new AutoSyncConfig(triggerName.trim(), triggerValue.trim(), sourceName.trim(), regex.trim(), targetToken.trim(), targetHost != null ? targetHost.trim() : "");
+			AutoSyncConfig newConfig = new AutoSyncConfig(triggerName.trim(), triggerValue.trim(), sourceName.trim(), regex.trim(), targetToken.trim(), targetHost != null ? targetHost.trim() : "", valueFilter != null ? valueFilter.trim() : "");
 			autoSyncList.add(newConfig);
 			triggerNameInput.setText("");
 			triggerValueInput.setText("");
 			sourceNameInput.setText("");
+			valueFilterInput.setText("");
 			regexInput.setText("");
 			targetTokenInput.setText("");
 			targetHostInput.setText("");

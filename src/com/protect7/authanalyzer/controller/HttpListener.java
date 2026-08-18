@@ -109,6 +109,10 @@ public class HttpListener implements IHttpListener, IProxyListener {
 							if (header != null && header.toLowerCase().startsWith(sourceName.toLowerCase() + ":")) {
 								String sourceValue = header.substring(header.indexOf(":") + 1).trim();
 
+								if (!isValueFilterMatch(sourceValue, syncConfig.getValueFilter())) {
+									break;
+								}
+
 								if (syncConfig.getExtractionRegex() != null && !syncConfig.getExtractionRegex().isEmpty()) {
 									try {
 										Pattern pattern = Pattern.compile(syncConfig.getExtractionRegex());
@@ -208,20 +212,30 @@ public class HttpListener implements IHttpListener, IProxyListener {
 		if (headerValue == null) {
 			return false;
 		}
-		String val = headerValue.trim();
-		String triggerVal = triggerValConfig.trim();
+		return headerValue.trim().equalsIgnoreCase(triggerValConfig.trim());
+	}
 
-		if (val.equalsIgnoreCase(triggerVal)) {
+	public static boolean isValueFilterMatch(String sourceValue, String valueFilterConfig) {
+		if (valueFilterConfig == null || valueFilterConfig.trim().isEmpty()) {
 			return true;
 		}
-		if (val.toLowerCase().startsWith(triggerVal.toLowerCase())) {
+		if (sourceValue == null) {
+			return false;
+		}
+		String val = sourceValue.trim();
+		String filter = valueFilterConfig.trim();
+
+		if (val.equalsIgnoreCase(filter)) {
 			return true;
 		}
-		if (val.toLowerCase().contains(triggerVal.toLowerCase())) {
+		if (val.toLowerCase().startsWith(filter.toLowerCase())) {
+			return true;
+		}
+		if (val.toLowerCase().contains(filter.toLowerCase())) {
 			return true;
 		}
 		try {
-			if (Pattern.compile(triggerVal, Pattern.CASE_INSENSITIVE).matcher(val).find()) {
+			if (Pattern.compile(filter, Pattern.CASE_INSENSITIVE).matcher(val).find()) {
 				return true;
 			}
 		} catch (Exception e) {

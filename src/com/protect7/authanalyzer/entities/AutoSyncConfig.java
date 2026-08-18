@@ -8,21 +8,28 @@ public class AutoSyncConfig {
 	private String extractionRegex;
 	private String targetTokenName;
 	private String targetHost = "";
+	private String valueFilter = "";
 	private String currentValue = "";
 	
 	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
 			String extractionRegex, String targetTokenName) {
-		this(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName, "");
+		this(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName, "", "");
 	}
 
 	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
 			String extractionRegex, String targetTokenName, String targetHost) {
+		this(triggerHeaderName, triggerHeaderValue, sourceHeaderName, extractionRegex, targetTokenName, targetHost, "");
+	}
+
+	public AutoSyncConfig(String triggerHeaderName, String triggerHeaderValue, String sourceHeaderName,
+			String extractionRegex, String targetTokenName, String targetHost, String valueFilter) {
 		this.triggerHeaderName = triggerHeaderName;
 		this.triggerHeaderValue = triggerHeaderValue;
 		this.sourceHeaderName = sourceHeaderName;
 		this.extractionRegex = extractionRegex;
 		this.targetTokenName = targetTokenName;
 		this.targetHost = targetHost != null ? targetHost : "";
+		this.valueFilter = valueFilter != null ? valueFilter : "";
 	}
 
 	public String getTriggerHeaderName() {
@@ -71,6 +78,14 @@ public class AutoSyncConfig {
 
 	public void setTargetHost(String targetHost) {
 		this.targetHost = targetHost != null ? targetHost : "";
+	}
+
+	public String getValueFilter() {
+		return valueFilter;
+	}
+
+	public void setValueFilter(String valueFilter) {
+		this.valueFilter = valueFilter != null ? valueFilter : "";
 	}
 
 	public String getCurrentValue() {
