@@ -41,4 +41,17 @@ public class HttpListenerTest {
 		Assert.assertTrue(HttpListener.isHostMatch("NS.EXAMPLE.COM", "ns.example.com"));
 		Assert.assertTrue(HttpListener.isHostMatch("ns.example.com", "NS.EXAMPLE.COM"));
 	}
+
+	@Test
+	public void testIsTriggerValueMatchNullOrEmptyConfig() {
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("Bearer eyJhbGci...", null));
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("Bearer eyJhbGci...", ""));
+	}
+
+	@Test
+	public void testIsTriggerValueMatchPrefixAndSubstring() {
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("Bearer eyJhbGci...", "Bearer"));
+		Assert.assertTrue(HttpListener.isTriggerValueMatch("Basic dXNlcjpwYXNz", "Basic"));
+		Assert.assertFalse(HttpListener.isTriggerValueMatch("Basic dXNlcjpwYXNz", "Bearer"));
+	}
 }

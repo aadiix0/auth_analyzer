@@ -95,7 +95,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 					for (String header : headers) {
 						if (header != null && header.toLowerCase().startsWith(triggerName.toLowerCase() + ":")) {
 							String value = header.substring(header.indexOf(":") + 1).trim();
-							if (triggerVal == null || triggerVal.trim().isEmpty() || value.equalsIgnoreCase(triggerVal.trim())) {
+							if (isTriggerValueMatch(value, triggerVal)) {
 								triggerMatched = true;
 								break;
 							}
@@ -199,6 +199,35 @@ public class HttpListener implements IHttpListener, IProxyListener {
 				message.setInterceptAction(IInterceptedProxyMessage.ACTION_DROP);
 			}
 		}
+	}
+
+	public static boolean isTriggerValueMatch(String headerValue, String triggerValConfig) {
+		if (triggerValConfig == null || triggerValConfig.trim().isEmpty()) {
+			return true;
+		}
+		if (headerValue == null) {
+			return false;
+		}
+		String val = headerValue.trim();
+		String triggerVal = triggerValConfig.trim();
+
+		if (val.equalsIgnoreCase(triggerVal)) {
+			return true;
+		}
+		if (val.toLowerCase().startsWith(triggerVal.toLowerCase())) {
+			return true;
+		}
+		if (val.toLowerCase().contains(triggerVal.toLowerCase())) {
+			return true;
+		}
+		try {
+			if (Pattern.compile(triggerVal, Pattern.CASE_INSENSITIVE).matcher(val).find()) {
+				return true;
+			}
+		} catch (Exception e) {
+			// Ignore invalid regex
+		}
+		return false;
 	}
 
 	public static boolean isHostMatch(String requestHost, String targetHostConfig) {
